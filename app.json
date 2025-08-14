@@ -38,6 +38,10 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://your-project-id.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-anon-key-here"
     }
   }
 }
