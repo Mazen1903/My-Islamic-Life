@@ -11,7 +11,8 @@ import { ThemeProvider } from '@/shared/contexts/ThemeContext';
 import { AuthProvider } from '@/shared/contexts/AuthContext';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { clerkConfig } from '@/shared/config/clerk';
-import { Colors } from '@/shared/constants/Colors';
+import { Colors } from '@/shared/constants/Colors'
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -64,6 +65,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  useFrameworkReady();
   return (
     <ClerkProvider 
       publishableKey={clerkConfig.publishableKey}
