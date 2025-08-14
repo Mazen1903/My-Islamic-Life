@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ClerkProvider } from '@clerk/clerk-expo';
@@ -66,6 +67,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useFrameworkReady();
+  
+  // Prevent app from loading on web
+  if (Platform.OS === 'web') {
+    return null;
+  }
+  
   return (
     <ClerkProvider 
       publishableKey={clerkConfig.publishableKey}
