@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs, useRouter } from 'expo-router';
 import { View, ActivityIndicator, Image } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 
 import { Colors } from '@/shared/constants/Colors';
 import { useTheme } from '@/shared/contexts/ThemeContext';
@@ -22,12 +22,12 @@ const customIcons = {
   profile: require('../../assets/images/settings.png'),
 };
 
-function CustomImageIcon({ 
+const CustomImageIcon = React.memo(({ 
   imageSource, 
   color, 
   size, 
   focused 
-}: TabIconProps & { imageSource: any }) {
+}: TabIconProps & { imageSource: any }) => {
   return (
     <View style={{
       alignItems: 'center',
@@ -48,9 +48,9 @@ function CustomImageIcon({
       />
     </View>
   );
-}
+});
 
-function TabIcon({ name, color, size, focused }: TabIconProps & { name: keyof typeof Ionicons.glyphMap }) {
+const TabIcon = React.memo(({ name, color, size, focused }: TabIconProps & { name: keyof typeof Ionicons.glyphMap }) => {
   return (
     <View style={{
       alignItems: 'center',
@@ -67,7 +67,7 @@ function TabIcon({ name, color, size, focused }: TabIconProps & { name: keyof ty
       />
     </View>
   );
-}
+});
 
 export default function TabLayout() {
   const { isDark } = useTheme();
@@ -75,11 +75,15 @@ export default function TabLayout() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
+  const handleAuthRedirect = useCallback(() => {
     if (!isLoading && !user) {
       router.replace('/auth/sign-in');
     }
   }, [user, isLoading, router]);
+
+  useEffect(() => {
+    handleAuthRedirect();
+  }, [handleAuthRedirect]);
 
   if (isLoading) {
     return (
@@ -98,40 +102,42 @@ export default function TabLayout() {
     return null; // Will redirect to sign-in
   }
 
+  const tabScreenOptions = useMemo(() => ({
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.secondaryText,
+    tabBarStyle: {
+      position: 'absolute',
+      bottom: 25,
+      left: 25,
+      right: 25,
+      backgroundColor: colors.card,
+      borderRadius: 30,
+      height: 64,
+      paddingBottom: 0,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 10,
+    },
+    tabBarIconStyle: {
+      marginTop: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tabBarLabelStyle: {
+      fontSize: 12,
+      marginTop: 0,
+      marginBottom: 8,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    headerShown: false,
+  }), [colors]);
+
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.secondaryText,
-        tabBarStyle: {
-          position: 'absolute',
-          bottom: 25,
-          left: 25,
-          right: 25,
-          backgroundColor: colors.card,
-          borderRadius: 30,
-          height: 64,
-          paddingBottom: 0,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          borderWidth: 1,
-          borderColor: colors.border,
-          marginHorizontal: 10,
-        },
-        tabBarIconStyle: {
-          marginTop: 8,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginTop: 0,
-          marginBottom: 8,
-          fontWeight: '600',
-          textAlign: 'center',
-        },
-        headerShown: false,
-      }}
+      screenOptions={tabScreenOptions}
     >
       <Tabs.Screen
         name="index"

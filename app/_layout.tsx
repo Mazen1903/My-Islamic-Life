@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } fro
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ClerkProvider } from '@clerk/clerk-expo';
@@ -20,13 +20,17 @@ function RootLayoutNav() {
   const { isDark } = useTheme();
   const themeColors = Colors[isDark ? 'dark' : 'light'];
 
-  useEffect(() => {
-    // Hide splash screen after a brief moment
-    const timer = setTimeout(() => {
+  const hideSplashScreen = useCallback(async () => {
+    try {
       SplashScreen.hideAsync();
-    }, 500);
+    } catch (error) {
+      console.warn('Error hiding splash screen:', error);
+    }
+  }, []);
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    // Hide splash screen immediately when layout is ready
+    hideSplashScreen();
   }, []);
 
   return (
@@ -38,7 +42,7 @@ function RootLayoutNav() {
               screenOptions={{ 
                 headerShown: false,
                 contentStyle: { backgroundColor: themeColors.background },
-                animation: 'fade'
+                animation: 'simple_push'
               }}
             >
               <Stack.Screen name="index" />

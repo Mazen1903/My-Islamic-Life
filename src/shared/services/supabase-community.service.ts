@@ -22,8 +22,8 @@ import { authHelper } from "@/shared/utils/auth-helper";
 
 class MockCommunityService {
   // Helper to simulate API delay
-  private async mockDelay() {
-    await new Promise(resolve => setTimeout(resolve, 500));
+  private async mockDelay(ms: number = 100) {
+    await new Promise(resolve => setTimeout(resolve, ms));
   }
 
   // Helper to get current user ID

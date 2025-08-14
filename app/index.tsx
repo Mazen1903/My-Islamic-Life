@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth as useClerkAuth } from '@clerk/clerk-expo';
@@ -16,43 +16,43 @@ export default function IndexScreen() {
   const router = useRouter();
   const [hasNavigated, setHasNavigated] = useState(false);
 
-  useEffect(() => {
-    const checkFirstTimeUser = async () => {
-      try {
-        // Wait for both our auth context and Clerk to be loaded
-        if (!isLoading && isClerkLoaded && !hasNavigated) {
-          setHasNavigated(true);
-          
-          const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-          
-          if (!hasSeenOnboarding) {
-            // First time user - show onboarding
-            router.replace('/onboarding');
-          } else if (user && isSignedIn) {
-            // Returning user with account - go to main app
-            router.replace('/(tabs)');
-          } else {
-            // Returning user without account - go to sign in
-            router.replace('/auth/sign-in');
-          }
-        }
-      } catch (error) {
-        console.log('Error checking first time user:', error);
-        // Fallback to normal flow
-        if (!isLoading && isClerkLoaded && !hasNavigated) {
-          setHasNavigated(true);
-          
-          if (user && isSignedIn) {
-            router.replace('/(tabs)');
-          } else {
-            router.replace('/auth/sign-in');
-          }
+  const checkFirstTimeUser = useCallback(async () => {
+    try {
+      // Wait for both our auth context and Clerk to be loaded
+      if (!isLoading && isClerkLoaded && !hasNavigated) {
+        setHasNavigated(true);
+        
+        const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+        
+        if (!hasSeenOnboarding) {
+          // First time user - show onboarding
+          router.replace('/onboarding');
+        } else if (user && isSignedIn) {
+          // Returning user with account - go to main app
+          router.replace('/(tabs)');
+        } else {
+          // Returning user without account - go to sign in
+          router.replace('/auth/sign-in');
         }
       }
-    };
-
-    checkFirstTimeUser();
+    } catch (error) {
+      console.log('Error checking first time user:', error);
+      // Fallback to normal flow
+      if (!isLoading && isClerkLoaded && !hasNavigated) {
+        setHasNavigated(true);
+        
+        if (user && isSignedIn) {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/auth/sign-in');
+        }
+      }
+    }
   }, [user, isLoading, isClerkLoaded, isSignedIn, router, hasNavigated]);
+
+  useEffect(() => {
+    checkFirstTimeUser();
+  }, [checkFirstTimeUser]);
 
   // Show loading screen during initial load
   if (isLoading || !isClerkLoaded || !hasNavigated) {

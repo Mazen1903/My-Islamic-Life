@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, TextInput, FlatList, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -264,48 +264,7 @@ export default function CommunityScreen() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
-  // Load data on component mount and tab changes
-  useEffect(() => {
-    loadPosts();
-    loadDiscussions();
-    loadConversations(); // Always load conversations to get unread count
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'Discuss' && discussions.length === 0) {
-      loadDiscussions();
-    } else if (activeTab === 'Messages') {
-      // Always reload conversations when switching to Messages tab to get latest unread counts
-      loadConversations();
-    }
-  }, [activeTab]);
-
-  // Refresh unread count periodically (every 30 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeTab !== 'Messages') {
-        // Only refresh if not on Messages tab to avoid conflicts
-        loadConversations(true); // Skip loading state for background refresh
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [activeTab]);
-
-  // Refresh unread count when app becomes active
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active' && activeTab !== 'Messages') {
-        // Refresh unread count when app becomes active (if not on Messages tab)
-        loadConversations(true); // Skip loading state for background refresh
-      }
-    };
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription?.remove();
-  }, [activeTab]);
-
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
       console.log('📝 Loading posts...');
@@ -322,9 +281,9 @@ export default function CommunityScreen() {
     } finally {
       setIsLoadingPosts(false);
     }
-  };
+  }, []);
 
-  const loadDiscussions = async () => {
+  const loadDiscussions = useCallback(async () => {
     try {
       setIsLoadingDiscussions(true);
       console.log('💬 Loading discussions...');
@@ -341,9 +300,9 @@ export default function CommunityScreen() {
     } finally {
       setIsLoadingDiscussions(false);
     }
-  };
+  }, []);
 
-  const loadConversations = async (skipLoadingState = false) => {
+  const loadConversations = useCallback(async (skipLoadingState = false) => {
     try {
       if (!skipLoadingState) {
         setIsLoadingConversations(true);
@@ -365,9 +324,21 @@ export default function CommunityScreen() {
         setIsLoadingConversations(false);
       }
     }
-  };
+  }, []);
 
-  const handleCreatePost = async () => {
+  // Load data on component mount and tab changes
+  useEffect(() => {
+    // Only load data for the current active tab to improve performance
+    if (activeTab === 'Feed' && posts.length === 0) {
+      loadPosts();
+    } else if (activeTab === 'Discuss' && discussions.length === 0) {
+      loadDiscussions();
+    } else if (activeTab === 'Messages') {
+      loadConversations();
+    }
+  }, [activeTab, posts.length, discussions.length, loadPosts, loadDiscussions, loadConversations]);
+
+  const handleCreatePost = useCallback(async () => {
     if (!user) {
       alert('Please log in to create a post');
       return;
@@ -440,9 +411,9 @@ export default function CommunityScreen() {
     } finally {
       setIsCreatingPost(false);
     }
-  };
+  }, [user, newPostContent, postType, pollQuestion, pollOptions, selectedImage, imageCaption, loadPosts]);
 
-  const handleLikePost = async (postId: string) => {
+  const handleLikePost = useCallback(async (postId: string) => {
     try {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
@@ -468,9 +439,9 @@ export default function CommunityScreen() {
     } catch (error) {
       console.error('Error liking post:', error);
     }
-  };
+  }, [posts]);
 
-  const handleVoteOnPoll = async (postId: string, optionId: string) => {
+  const handleVoteOnPoll = useCallback(async (postId: string, optionId: string) => {
     try {
       await communityService.voteOnPoll(postId, optionId);
       // Reload posts to get updated poll data
@@ -487,9 +458,9 @@ export default function CommunityScreen() {
         alert('Failed to vote on poll. Please try again.');
       }
     }
-  };
+  }, [loadPosts]);
 
-  const handleCreateTopic = async (title: string, content: string, category: string) => {
+  const handleCreateTopic = useCallback(async (title: string, content: string, category: string) => {
     if (!user || !title.trim() || !content.trim()) {
       alert('Please fill in both title and content');
       return;
@@ -528,9 +499,9 @@ export default function CommunityScreen() {
     } finally {
       setIsCreatingTopic(false);
     }
-  };
+  }, [user, loadDiscussions]);
 
-  const handleReplyToDiscussion = async (topicId: string, reply: string): Promise<boolean> => {
+  const handleReplyToDiscussion = useCallback(async (topicId: string, reply: string): Promise<boolean> => {
     if (!user || !reply.trim()) {
       alert('Please enter a reply');
       return false;
@@ -570,9 +541,9 @@ export default function CommunityScreen() {
     } finally {
       setIsSubmittingReply(false);
     }
-  };
+  }, [user, isSubmittingReply, loadDiscussions]);
 
-  const handleUserSelected = async (selectedUser: ConnectedUser, conversationId?: string) => {
+  const handleUserSelected = useCallback(async (selectedUser: ConnectedUser, conversationId?: string) => {
     console.log('🎯 handleUserSelected called with user:', selectedUser.name, 'conversationId:', conversationId);
     
     try {
@@ -630,9 +601,9 @@ export default function CommunityScreen() {
       console.error('Error in handleUserSelected:', error);
       alert('Failed to start conversation');
     }
-  };
+  }, [user, conversations, loadConversations]);
 
-  const handleDeleteConversation = async (conversationId: string) => {
+  const handleDeleteConversation = useCallback(async (conversationId: string) => {
     try {
       console.log('🗑️ Deleting conversation:', conversationId);
       const response = await communityService.deleteConversation(conversationId);
@@ -649,9 +620,9 @@ export default function CommunityScreen() {
       console.error('❌ Error deleting conversation:', error);
       alert('Failed to delete conversation');
     }
-  };
+  }, [loadConversations]);
 
-  const renderFeedScreen = () => (
+  const renderFeedScreen = useMemo(() => (
     <ScrollView 
       style={styles.tabContent} 
       showsVerticalScrollIndicator={false}
@@ -696,9 +667,9 @@ export default function CommunityScreen() {
         ))
       )}
     </ScrollView>
-  );
+  ), [colors, isLoadingPosts, posts, handleLikePost, handleVoteOnPoll]);
 
-  const renderDiscussScreen = () => (
+  const renderDiscussScreen = useMemo(() => (
     <ScrollView 
       style={styles.tabContent} 
       showsVerticalScrollIndicator={false}
@@ -737,11 +708,9 @@ export default function CommunityScreen() {
         ))
       )}
     </ScrollView>
-  );
+  ), [colors, isLoadingDiscussions, discussions, handleReplyToDiscussion, isSubmittingReply]);
 
-
-
-  const renderMessagesScreen = () => (
+  const renderMessagesScreen = useMemo(() => (
     <View style={styles.tabContent}>
       {/* Header with Search and New Chat Button */}
       <View style={styles.messagesHeader}>
@@ -816,7 +785,7 @@ export default function CommunityScreen() {
         />
       )}
     </View>
-  );
+  ), [colors, searchMessages, isLoadingConversations, conversations, handleDeleteConversation]);
 
   const renderTabContent = () => {
     switch (activeTab) {
