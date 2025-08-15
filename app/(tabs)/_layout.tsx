@@ -6,6 +6,7 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { Colors } from '@/shared/constants/Colors';
 import { useTheme } from '@/shared/contexts/ThemeContext';
 import { useAuth } from '@/shared/contexts/AuthContext';
+import React from 'react;'
 
 type TabIconProps = {
   color: string;
